@@ -1,16 +1,13 @@
 package br.com.alura.service;
 
 import br.com.alura.client.ClientHttpConfiguration;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import br.com.alura.model.Abrigo;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 public class AbrigoService {
@@ -28,12 +25,23 @@ public class AbrigoService {
         var response = client.getHttpResponse(uri);
 
         String responseBody = response.body();
-        JsonArray jsonArray = JsonParser.parseString(responseBody).getAsJsonArray();
-        System.out.println("Abrigos cadastrados:");
-        for (JsonElement element : jsonArray) {
-            JsonObject jsonObject = element.getAsJsonObject();
-            long id = jsonObject.get("id").getAsLong();
-            String nome = jsonObject.get("nome").getAsString();
+
+        Abrigo[] abrigos = new ObjectMapper().readValue(responseBody, Abrigo[].class);
+
+        List<Abrigo> abrigoList = Arrays.stream(abrigos).toList();
+        if (abrigoList.isEmpty()){
+            System.out.println("Não há abrigos cadastrados.");
+        } else {
+                System.out.println("Abrigos cadastrados:");
+                retornaListAbrigos(abrigoList);
+
+        }
+    }
+
+    private static void retornaListAbrigos(List<Abrigo> abrigoList) {
+        for (Abrigo a : abrigoList) {
+            long id = a.getId();
+            String nome = a.getNome();
             System.out.println(id +" - " +nome);
         }
     }
@@ -46,15 +54,12 @@ public class AbrigoService {
         System.out.println("Digite o email do abrigo:");
         String email = new Scanner(System.in).nextLine();
 
-        JsonObject json = new JsonObject();
-        json.addProperty("nome", nome);
-        json.addProperty("telefone", telefone);
-        json.addProperty("email", email);
+        Abrigo abrigo = new Abrigo(nome, telefone, email);
 
 
         String uri = "http://localhost:8080/abrigos";
 
-        HttpResponse<String> response = client.postHttpResponse(uri, json);
+        HttpResponse<String> response = client.postHttpResponse(uri, abrigo);
 
         int statusCode = response.statusCode();
         String responseBody = response.body();
